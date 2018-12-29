@@ -1,0 +1,187 @@
+<html>
+<head>
+    <meta carset="utf-8">
+    <link rel="stylesheet" type="text/css" href="style.css" media="screen" />
+    <script type="text/javascript" src="http://unpkg.com/brain.js@1.1.2/browser.min.js"></script>
+    <script src="http://d3js.org/d3.v4.min.js"></script>
+  
+    <style>
+    </style>
+</head>
+<body>
+    <h3>Less Simple App Selector - LSTM 3</h3>
+
+    <p>Paste in data from spreadsheet and the network will determine if it should be bought or not.</p>
+    <br/>
+    <p>For example: Identifier: A-591560124 , Number of requests: 50342628, Ecpm: 0.89 </p>
+        <br/><br/>
+        <form id="myform">
+            <label for="ssp">SSP:</label>
+            <input type="text"  id="text1" name="ssp" size="30"/>
+            <br/>
+            <label for="dsp">DSP:</label>
+            <input type="text"  id="text2" name="dsp" size="30" />
+            <br/>
+            <label for="ecpm">Bundle:</label>
+            <input type="text"  id="text3" name="bundle" size="30" />
+            <br/>
+            <label for="country">Country:</label>
+            <input type="text"  id="text4" name="country" size="30" />
+            <br/>
+            <label for="size">Size:</label>
+            <input type="text"  id="text5" name="size" size="30" />
+            <br/>
+            <label for="requests">Requests:</label>
+            <input type="text"  id="text6" name="requests" size="30" />
+            <br/>
+            <label for="impressions">Impressions:</label>
+            <input type="text"  id="text7" name="impressions" size="30" />
+            <br/>
+            <label for="ssprevenue">SSP Revenue:</label>
+            <input type="text"  id="text8" name="ssprevenue" />
+            <br/>
+            <label for="dsprevenue">DSP Revenue:</label>
+            <input type="text"  id="text9" name="dsporevenue"/>
+            <br/>
+            <label for="requests">Ecpm:</label>
+            <input type="text"  id="text10" name="requests"/>
+            <br/>
+            <button name="submit" label="submit" onclick="clicked(event)" >Submit</button>
+        </form>
+        <br/>
+        <div id="output">Please wait while we train Marvin...</div>
+<script>
+var csvArray = [];
+
+var arr1 = [];
+var arr2 = [];
+var arr3 = [];
+var finaldata = [];
+
+const network = new brain.recurrent.LSTM();
+const datafile = './September.csv';
+
+d3.csv(datafile, function(data){
+
+    console.log("data: ", data );
+
+    for (var i = 0 ; i < 1000 ; i++ ) {
+        data[i].Buy = "Yes";
+        arr1.push(data[i]);
+    }
+    
+
+    var bottom1000 = data.length - 1000;
+
+    for (var j = 64499 ; j < 65499 ; j++ ) {
+        data[j].Buy = "No";
+        arr2.push(data[j])
+    }
+
+    //console.log("arr2: ", arr2 );
+
+    finaldata = arr1.concat(arr2);
+
+    //console.log("final arr: ", arr3 );
+
+    console.log("Create data map: ", finaldata[0]);
+    var trainingData = finaldata.map(item =>({
+        input: [ item.SSP, item.Dsp, item.Identifier, item.Country,
+            item.Size, item.Request, item.Impression,
+            item["Ssp Revenue"], item["Dsp Revenue"], item["Avg Ecpm"]],
+        output: item.Buy
+    }));
+
+    trainingData = shuffle(trainingData);
+    console.log("Start training: ", trainingData[0] );
+
+    network.train(trainingData, {
+        iterations: 1
+    });
+
+    console.log("Finished training, let's test some data...");
+
+    document.getElementById("output").innerHTML = "Enter Data when ready...";
+
+});//end csv
+
+function clicked () {
+    console.log("Let's go!!!");
+    event.preventDefault();
+
+    var frm_element = document.getElementById('myform').value;
+    var txt1_element = document.getElementById('text1').value;
+    var txt2_element = document.getElementById('text2').value;
+    var txt3_element = document.getElementById('text3').value;
+    var txt4_element = document.getElementById('text4').value;
+    var txt5_element = document.getElementById('text5').value;
+    var txt6_element = Number(document.getElementById('text6').value);
+    var txt7_element = Number(document.getElementById('text7').value);
+    var txt8_element = Number(document.getElementById('text8').value);
+    var txt9_element = Number(document.getElementById('text9').value);
+    var txt10_element = Number(document.getElementById('text10').value);
+
+/*    if (txt1_element.trim() == '')
+        {
+            alert ('Please enter an App identifier');
+        }
+     
+    if (txt2_element == '')
+            {
+                alert ('Please enter Number of Requests');
+            }
+        
+    if (txt3_element == '')
+            {
+                alert ('Please enter Ecpm');
+            }
+     
+     
+    console.log( "Form: " + txt1_element );
+    console.log( "How about this " + txt2_element);
+    console.log( "text 3: " + txt3_element)
+        */
+    
+    const output = network.run([
+        txt1_element,
+        txt2_element, 
+        txt3_element,
+        txt4_element,
+        txt5_element,
+        txt6_element,
+        0,
+        txt8_element,
+        txt9_element,
+        txt10_element
+    ]);  
+
+    console.log('output: ', output );
+    document.getElementById("output").innerHTML = `${output}`;
+
+}//end clicked
+
+
+function shuffle( data ) {
+    console.log("Shuffle: ");
+    var arr = [];
+    var current = data.length;
+    var index, temp;
+    while (current > 0 ) {
+        index = Math.floor(Math.random() * current);
+        current--;
+
+        temp = data[current];
+        data[current] = data[index];
+        data[index] = temp;
+    } 
+
+    arr = data;
+    return arr; 
+}//end shuffle
+
+
+</script>
+
+</body>
+</html>
+
